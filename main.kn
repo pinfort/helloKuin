@@ -1,0 +1,4 @@
+func main()
+	var code: \http\request@StatusCode :: %ok
+	do cui@print((code $ int).toStr())
+end func

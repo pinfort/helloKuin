@@ -1,4 +1,64 @@
+const requirementsFile: []char :: "researches.json"
+
 func main()
-	var code: \http\request@StatusCode :: %ok
-	do cui@print((code $ int).toStr())
+	if(!file@exist(@requirementsFile))
+		do cui@print(["File", @requirementsFile, "not found."].join(" "))
+		throw 1
+	end if
+	do @readJson()
+end func
+
+; JSONファイルを読み込み、解析します
+func readJson()
+	var requirements: list<[]char>
+	var json: \kuin_modules\satonayu\himejson\src\json@Json :: \kuin_modules\satonayu\himejson\src\json@makeJsonF("researches.json")
+	var dependencies: \kuin_modules\satonayu\himejson\src\json@JsonObject :: json.at("dependencies").toJObj()
+	do dependencies.forEach(@resolve, requirements)
+	
+	for requirementsCount(0, ^requirements)
+		do cui@print(requirements.getOffset(requirementsCount))
+	end for
+end func
+
+; JSONファイルのdependenciesディレクティブをforeachで回すときの受け関数
+func resolve(url: []char, version: \kuin_modules\satonayu\himejson\src\json@Json, requirements: list<[]char>): bool
+	do requirements.ins(@urlFactory(url, version.toStr()))
+end func
+
+; JSONファイルに与えられたURLをバージョン番号からzipファイルdownload URLを作成します
+func urlFactory(url: []char, versionStr: []char): []char
+	var version: []char :: @parseVersion(versionStr)
+	var directory: []char :: @parseUrl(url)
+	ret[url, "/archive/", version, ".zip"].join("")
+end func
+
+; jsonファイル内のバージョン表記を解析します
+func parseVersion(versionStr: []char): []char
+	if(@startsWith(versionStr, "dev-"))
+		; dev-branchの場合
+		var branchName: []char :: versionStr.sub(^"dev-", -1)
+		ret branchName
+	end if
+	
+	; tagの場合
+	ret versionStr
+end func
+
+; JSONファイル内のURLを解析して保存先のディレクトリ名を決定します
+func parseUrl(url: []char): []char
+	var strippedUrl: [][]char :: url.split("/")
+	var directoryNames: [][]char :: strippedUrl.sub(^strippedUrl - 2, -1)
+	var directoryName: []char :: directoryNames.join("/")
+	do cui@print(directoryName)
+	ret directoryName
+end func
+
+; textはprefixで始まっている？
+func startsWith(text: []char, prefix: []char): bool
+	ret(text.findStr(prefix, -1) = 0)
+end func
+
+; textはsuffixで終わっている？
+func endsWith(text: []char, suffix: []char): bool
+	ret(text.findStrLast(suffix, -1) = (^text - ^suffix))
 end func

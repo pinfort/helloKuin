@@ -1,5 +1,23 @@
-class Request()
-	
++class Download()
+	+func execute(url: []char, savePath: []char): []char
+		var httpConnection: net@Http
+		do httpConnection :: net@makeHttp(url, false, "kuin")
+		if(httpConnection =& null)
+			do cui@print("status code is out of 200-299 range.")
+			ret null
+		end if
+		var httpData: []char :: httpConnection.get()
+		while(httpData =& null)
+			do httpData :: httpConnection.get()
+		end while
+		do httpConnection.fin()
+		var writer: file@Writer :: file@makeWriter(savePath, false)
+		for readData(0, (^httpData - 1))
+			do writer.write(((httpData[readData]) $> []bit8))
+		end for
+		do writer.fin()
+		ret savePath
+	end func
 end class
 
 +enum StatusCode

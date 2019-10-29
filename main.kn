@@ -5,24 +5,24 @@ func main()
 		do cui@print(["File", @requirementsFile, "not found."].join(" "))
 		throw 1
 	end if
-	do @readJson()
+	var downloader: \http\download@Download :: #\http\download@Download
+	do downloader.execute("https://codeload.github.com/kuina/Kuin/zip/develop", "res/testfile.zip")
+	;do @readJson()
 end func
 
 ; JSONファイルを読み込み、解析します
 func readJson()
-	var requirements: list<[]char>
 	var json: \kuin_modules\satonayu\himejson\src\json@Json :: \kuin_modules\satonayu\himejson\src\json@makeJsonF("researches.json")
-	var dependencies: \kuin_modules\satonayu\himejson\src\json@JsonObject :: json.at("dependencies").toJObj()
-	do dependencies.forEach(@resolve, requirements)
+	var dependenciesJObj: \kuin_modules\satonayu\himejson\src\json@JsonObject :: json.at("dependencies").toJObj()
 	
-	for requirementsCount(0, ^requirements)
-		do cui@print(requirements.getOffset(requirementsCount))
-	end for
-end func
-
-; JSONファイルのdependenciesディレクティブをforeachで回すときの受け関数
-func resolve(url: []char, version: \kuin_modules\satonayu\himejson\src\json@Json, requirements: list<[]char>): bool
-	do requirements.ins(@urlFactory(url, version.toStr()))
+	var resolvedDependencies: list<[]char> :: @readDependencies(dependenciesJObj)
+	
+	do resolvedDependencies.head()
+	while(!resolvedDependencies.term())
+		do cui@print(resolvedDependencies.get())
+		do resolvedDependencies.next()
+	end while
+	
 end func
 
 ; JSONファイルに与えられたURLをバージョン番号からzipファイルdownload URLを作成します
@@ -49,7 +49,6 @@ func parseUrl(url: []char): []char
 	var strippedUrl: [][]char :: url.split("/")
 	var directoryNames: [][]char :: strippedUrl.sub(^strippedUrl - 2, -1)
 	var directoryName: []char :: directoryNames.join("/")
-	do cui@print(directoryName)
 	ret directoryName
 end func
 
@@ -61,4 +60,21 @@ end func
 ; textはsuffixで終わっている？
 func endsWith(text: []char, suffix: []char): bool
 	ret(text.findStrLast(suffix, -1) = (^text - ^suffix))
+end func
+
+func readDependencies(dependenciesObject: \kuin_modules\satonayu\himejson\src\json@JsonObject): list<[]char>
+	class dependenciesContainer()
+		+var dependenciesList: list<[]char>
+	end class
+	
+	; JSONファイルのdependenciesディレクティブをforeachで回すときの受け関数
+	func resolve(url: []char, version: \kuin_modules\satonayu\himejson\src\json@Json, dependencies: dependenciesContainer): bool
+		do dependencies.dependenciesList.add(@urlFactory(url, version.toStr()))
+	end func
+	
+	var dependenciesContainerInstance: dependenciesContainer :: #dependenciesContainer
+	do dependenciesContainerInstance.dependenciesList :: #list<[]char>
+	var resolvedDependencies: dependenciesContainer :: dependenciesContainerInstance
+	do dependenciesObject.forEach(resolve, resolvedDependencies)
+	ret resolvedDependencies.dependenciesList
 end func

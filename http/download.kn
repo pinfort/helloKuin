@@ -12,9 +12,18 @@
 		end while
 		do httpConnection.fin()
 		var writer: file@Writer :: file@makeWriter(savePath, false)
-		for readData(0, (^httpData - 1))
-			do writer.write(((httpData[readData]) $> []bit8))
+		var bitData: list<bit8> :: #list<bit8>
+		;for readData(0, (^httpData - 1))
+		for readData(0, (16))
+			var ch: char :: httpData[readData]
+			do cui@print((ch $ int).toStr() ~ "\n")
+			;if((httpData[readData] $ bit8) = 0xFDb8)
+			
+			;ret savePath
+			;end if
+			;do bitData.add((httpData[readData]) $ bit8)
 		end for
+		do writer.write(bitData.toArray())
 		do writer.fin()
 		ret savePath
 	end func
